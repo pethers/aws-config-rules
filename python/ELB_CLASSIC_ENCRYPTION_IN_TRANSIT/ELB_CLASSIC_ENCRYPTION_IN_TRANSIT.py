@@ -14,16 +14,16 @@
 #####################################
 
 Rule Name:
-  ELB_ALB_ENCRYPTION_IN_TRANSIT
+  ELB_CLASSIC_ENCRYPTION_IN_TRANSIT
 
 Description:
-  Checks whether your Application Load Balancer listeners are using TLS/SSL encryption in transit.
+  Checks whether your classic Load Balancer listeners are using TLS/SSL encryption in transit.
 
 Trigger:
-  Configuration change on AWS::LoadBalancingV2::LoadBalancer
+  Configuration change on AWS::LoadBalancing::LoadBalancer
 
 Resource Type to report on:
-  AWS::ElasticLoadBalancingV2::LoadBalancer
+  AWS::ElasticLoadBalancing::LoadBalancer
 
 #Rule Parameters:
 #  | ---------------------- | ---------- | -------------------------------------------------------------- |
@@ -38,20 +38,20 @@ Feature:
 
 Scenarios:
   Scenario 1:
-    Given: the ALB has no HTTPS listeners
+    Given: the ELB has no HTTPS listeners
      then: Return NON_COMPLIANT
 
   Scenario 2:
-      And: the ALB has at least 1 HTTP listener
+      And: the ELB has at least 1 HTTP listener
      then: Return NON_COMPLIANT
 
   Scenario 3:
-      And: the ALB has at least 1 HTTPS listener
+      And: the ELB has at least 1 HTTPS listener
       And: any of HTTPS listeners has at least 1 target group using HTTP protocol      
      then: Return NON_COMPLIANT
 
   Scenario 4:
-      And: the ALB has at least 1 HTTPS listener
+      And: the ELB has at least 1 HTTPS listener
       And: All the HTTPS listeners target groups use HTTPS protocol
      then: Return COMPLIANT
 '''
@@ -65,7 +65,7 @@ import botocore
 ##############
 
 # Define the default resource to report to Config Rules
-DEFAULT_RESOURCE_TYPE = 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+DEFAULT_RESOURCE_TYPE = 'AWS::ElasticLoadBalancing::LoadBalancer'
 
 # Set to True to get the lambda to assume the Role attached on the Config Service (useful for cross-account).
 ASSUME_ROLE_MODE = False
@@ -94,89 +94,50 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     3 -- if None or an empty string, list or dict is returned, the Boilerplate code will put a "shadow" evaluation to feedback that the evaluation took place properly
     """
     evaluations = []
-    alb_client = get_client("elbv2", event)
+    alb_client = get_client("elb", event)
 
-    all_elbv2 = get_all_elbv2(alb_client)
+    all_elbclassic = get_all_elbclassic(alb_client)
 
-    for elb in all_elbv2:
-        if elb['Type'] != 'application':
-            continue
+    for elb in all_elbclassic:
 
-        alb_all_listeners = get_all_listeners(alb_client, elb['LoadBalancerArn'])
+        elb_all_listenerdescriptions = elb['ListenerDescriptions']
 
-        http_bool, http_str = is_there_any_http_listeners_compliant(alb_all_listeners)
+        http_bool, http_str = is_there_any_http_listeners_compliant(elb_all_listenerdescriptions)
         if not http_bool:
-            evaluations.append(build_evaluation(elb['LoadBalancerArn'], 'NON_COMPLIANT', event, annotation=http_str))
+            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:{region}:{account-id}:loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=http_str))
             continue
 
-        https_bool, https_str = is_there_any_https_listeners_compliant(alb_all_listeners)
+        https_bool, https_str = is_there_any_https_listeners_compliant(elb_all_listenerdescriptions)
         if not https_bool:
-            evaluations.append(build_evaluation(elb['LoadBalancerArn'], 'NON_COMPLIANT', event, annotation=https_str))
-            continue
+            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:{region}:{account-id}:loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=https_str))
+            continue    
 
-        alb_all_target_groups = get_all_target_groups(alb_client, elb['LoadBalancerArn'])
-
-        http_target_group_bool, http_target_group_str = is_there_any_http_target_group_elb_compliant(alb_all_target_groups)
-        if not http_target_group_bool:
-            evaluations.append(build_evaluation(elb['LoadBalancerArn'], 'NON_COMPLIANT', event, annotation=http_target_group_str))
-            continue
-
-        evaluations.append(build_evaluation(elb['LoadBalancerArn'], 'COMPLIANT', event))
+        evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:{region}:{account-id}:loadbalancer/' + elb['LoadBalancerName'], 'COMPLIANT', event))
 
     return evaluations
 
-def is_there_any_http_listeners_compliant(listeners):
-    for listener in listeners:
-        if 'Protocol' in listener.keys():
-            if listener['Protocol'] == 'HTTP':
-                return False, 'This ALB has a HTTP listener'
+def is_there_any_http_listeners_compliant(listenerdescriptions):
+    for listenerdescription in listenerdescriptions:
+        if 'Listener' in listenerdescription.keys():
+            if listenerdescription['Listener']['Protocol'] == 'HTTP':
+                return False, 'This ELB has a HTTP listener'
     return True, None
 
-def is_there_any_https_listeners_compliant(listeners):
-    for listener in listeners:
-        if 'Protocol' in listener.keys():
-            if listener['Protocol'] == 'HTTPS':
+def is_there_any_https_listeners_compliant(listenerdescriptions):
+    for listenerdescription in listenerdescriptions:
+        if 'Listener' in listenerdescription.keys():
+            if listenerdescription['Listener']['Protocol'] == 'HTTPS':
                 return True, None                
-    return False, 'This ALB has no HTTPS listener'
-    
+    return False, 'This ELB has no HTTPS listener'
 
-def is_there_any_http_target_group_elb_compliant(targetgroups):
-    for targetgroup in targetgroups:
-        if 'Protocol' in targetgroup.keys():
-            if targetgroup['Protocol'] == 'HTTP':
-                return False, 'This ALB Target group use HTTP Protocol'               
-        if 'HealthCheckProtocol' in targetgroup.keys():
-            if targetgroup['HealthCheckProtocol'] == 'HTTP':
-                return False, 'This ALB Target group use HTTP HealthCheckProtocol'               
-    return True, None
-
-
-def get_all_elbv2(client):
+def get_all_elbclassic(client):
     resp = client.describe_load_balancers(PageSize=400)
     print(resp)
     items = []
     while resp:
-        items += resp['LoadBalancers']
+        items += resp['LoadBalancerDescriptions']
         resp = client.describe_load_balancers(Marker=resp['NextMarker']) if 'NextMarker' in resp else None
     return items
-
-def get_all_listeners(client, elbv2_arn):
-    resp = client.describe_listeners(LoadBalancerArn=elbv2_arn, PageSize=400)
-    items = []
-    while resp:
-        items += resp['Listeners']
-        resp = client.describe_listeners(LoadBalancerArn=elbv2_arn, Marker=resp['NextMarker']) if 'NextMarker' in resp else None
-    return items
-
-def get_all_target_groups(client, elbv2_arn):
-    resp = client.describe_target_groups(LoadBalancerArn=elbv2_arn, PageSize=400)
-    items = []
-    while resp:
-        items += resp['TargetGroups']
-        resp = client.describe_target_groups(LoadBalancerArn=elbv2_arn, Marker=resp['NextMarker']) if 'NextMarker' in resp else None
-    return items
-
-
 
 def evaluate_parameters(rule_parameters):
     """Evaluate the rule parameters dictionary validity. Raise a ValueError for invalid parameters.

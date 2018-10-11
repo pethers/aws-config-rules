@@ -1,0 +1,10 @@
+{
+  "Version": "1.0",
+  "Parameters": {
+    "RuleName": "ELB_ALB_ENCRYPTION_IN_TRANSIT",
+    "SourceRuntime": "python3.6",
+    "CodeKey": "ELB_ALB_ENCRYPTION_IN_TRANSIT.zip",
+    "InputParameters": "{}",
+    "SourcePeriodic": "TwentyFour_Hours"
+  }
+}
