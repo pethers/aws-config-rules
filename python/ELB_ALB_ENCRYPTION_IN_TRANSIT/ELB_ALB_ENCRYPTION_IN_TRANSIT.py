@@ -179,11 +179,11 @@ def get_all_listeners(client, elbv2_arn):
     return items
 
 def get_all_target_groups(client, elbv2_arn):
-    resp = client.describe_target_groups(LoadBalancerArns=[elbv2_arn], PageSize=400)
+    resp = client.describe_target_groups(LoadBalancerArn=elbv2_arn, PageSize=400)
     items = []
     while resp:
         items += resp['TargetGroups']
-        resp = client.describe_listeners(LoadBalancerArns=[elbv2_arn], Marker=resp['NextMarker']) if 'NextMarker' in resp else None
+        resp = client.describe_target_groups(LoadBalancerArn=elbv2_arn, Marker=resp['NextMarker']) if 'NextMarker' in resp else None
     return items
 
 
