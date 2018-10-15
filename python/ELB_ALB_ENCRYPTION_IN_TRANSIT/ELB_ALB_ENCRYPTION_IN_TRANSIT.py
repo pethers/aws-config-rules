@@ -461,9 +461,10 @@ def lambda_handler(event, context):
         testMode = True
     # Invoke the Config API to report the result of the evaluation
     
-    for evaluation in evaluations:
-    	time.sleep(.2)    	    
-    	AWS_CONFIG_CLIENT.put_evaluations(Evaluations=[evaluation], ResultToken=resultToken, TestMode=testMode)
+    evaluationchuncks = list(chunks(evaluations, 99))    
+    for evaluationchunck in evaluationchuncks:
+        time.sleep(.2)    	    
+        AWS_CONFIG_CLIENT.put_evaluations(Evaluations=evaluationchunck, ResultToken=resultToken, TestMode=testMode)
 
 
     # Used solely for RDK test to be able to test Lambda function
@@ -485,3 +486,7 @@ def build_error_response(internalErrorMessage, internalErrorDetails=None, custom
     }
     print(error_response)
     return error_response
+
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
