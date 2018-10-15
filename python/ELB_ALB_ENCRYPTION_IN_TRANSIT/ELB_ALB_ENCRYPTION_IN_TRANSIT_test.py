@@ -50,8 +50,8 @@ class TestCompliance(unittest.TestCase):
     describe_targetgroups_non_compliant_health_check_protocol = {'TargetGroups': [{ 'TargetGroupArn': 'arn1', 'HealthCheckProtocol': 'HTTP', 'Protocol': 'HTTPS'},{ 'TargetGroupArn': 'arn2', 'HealthCheckProtocol': 'HTTPS', 'Protocol': 'HTTPS'}]}
      
         
-    describe_load_balancers_not_app = {'LoadBalancers': [{ 'LoadBalancerArn': 'arn1', 'Type': 'other'}]}
-    describe_load_balancers_app = {'LoadBalancers': [{ 'LoadBalancerArn': 'arn1', 'Type': 'application'},{ 'LoadBalancerArn': 'arn2', 'Type': 'application'}]}
+    describe_load_balancers_not_app = {'LoadBalancers': [{ 'DNSName': 'mb-preprod', 'LoadBalancerArn': 'arn1', 'Type': 'other'}]}
+    describe_load_balancers_app = {'LoadBalancers': [{ 'DNSName': 'mb-int', 'LoadBalancerArn': 'arn1', 'Type': 'application'},{ 'DNSName': 'mb-int', 'LoadBalancerArn': 'arn2', 'Type': 'application'}]}
 
     def test_scenario0_no_elb(self):
         rule.ASSUME_ROLE_MODE = False

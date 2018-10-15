@@ -40,11 +40,11 @@ rule = __import__('ELB_CLASSIC_ENCRYPTION_IN_TRANSIT')
 
 class TestCompliance(unittest.TestCase):
 
-    describe_load_balancers_no_https_listener = {'LoadBalancerDescriptions': [{ 'LoadBalancerName': 'name1', 'Type': 'application', 'ListenerDescriptions': [ ] }]}
+    describe_load_balancers_no_https_listener = {'LoadBalancerDescriptions': [{ 'VPCId': 'vpc-584d3e3d', 'LoadBalancerName': 'name1', 'Type': 'application', 'ListenerDescriptions': [ ] }]}
                
-    describe_load_balancers_only_http_listener = {'LoadBalancerDescriptions': [{ 'LoadBalancerName': 'name1', 'Type': 'application', 'ListenerDescriptions': [ { 'Listener': { 'Protocol': 'HTTP', 'InstanceProtocol': 'HTTP' } }] }]}
+    describe_load_balancers_only_http_listener = {'LoadBalancerDescriptions': [{ 'VPCId': 'vpc-584d3e3d', 'LoadBalancerName': 'name1', 'Type': 'application', 'ListenerDescriptions': [ { 'Listener': { 'Protocol': 'HTTP', 'InstanceProtocol': 'HTTP' } }] }]}
 
-    describe_load_balancers_only_https_listener = {'LoadBalancerDescriptions': [{ 'LoadBalancerName': 'name1', 'Type': 'application', 'ListenerDescriptions': [ { 'Listener': { 'Protocol': 'HTTPS', 'InstanceProtocol': 'HTTPS' } }] }]}
+    describe_load_balancers_only_https_listener = {'LoadBalancerDescriptions': [{ 'VPCId': 'vpc-584d3e3d', 'LoadBalancerName': 'name1', 'Type': 'application', 'ListenerDescriptions': [ { 'Listener': { 'Protocol': 'HTTPS', 'InstanceProtocol': 'HTTPS' } }] }]}
 
 
     def test_scenario0_no_elb(self):

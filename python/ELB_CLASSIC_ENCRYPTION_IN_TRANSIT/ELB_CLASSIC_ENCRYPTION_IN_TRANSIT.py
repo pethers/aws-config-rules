@@ -59,6 +59,7 @@ import json
 import datetime
 import boto3
 import botocore
+import time
 
 ##############
 # Parameters #
@@ -94,25 +95,29 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     3 -- if None or an empty string, list or dict is returned, the Boilerplate code will put a "shadow" evaluation to feedback that the evaluation took place properly
     """
     evaluations = []
+    
+    my_session = boto3.session.Session()
+	my_region = my_session.region_name
+    my_acccount_id = boto3.client('sts').get_caller_identity().get('Account')
+    
     alb_client = get_client("elb", event)
-
     all_elbclassic = get_all_elbclassic(alb_client)
 
     for elb in all_elbclassic:
-
+        
         elb_all_listenerdescriptions = elb['ListenerDescriptions']
 
         http_bool, http_str = is_there_any_http_listeners_compliant(elb_all_listenerdescriptions)
         if not http_bool:
-            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:{region}:{account-id}:loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=http_str))
+            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:' + my_region + ':' + my_acccount_id + ':loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=http_str))
             continue
 
         https_bool, https_str = is_there_any_https_listeners_compliant(elb_all_listenerdescriptions)
         if not https_bool:
-            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:{region}:{account-id}:loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=https_str))
+            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:' + my_region + ':' + my_acccount_id + ':loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=https_str))
             continue    
 
-        evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:{region}:{account-id}:loadbalancer/' + elb['LoadBalancerName'], 'COMPLIANT', event))
+        evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:' + my_region + ':' + my_acccount_id + ':loadbalancer/' + elb['LoadBalancerName'], 'COMPLIANT', event))
 
     return evaluations
 
@@ -418,7 +423,12 @@ def lambda_handler(event, context):
         # Used solely for RDK test to skip actual put_evaluation API call
         testMode = True
     # Invoke the Config API to report the result of the evaluation
-    AWS_CONFIG_CLIENT.put_evaluations(Evaluations=evaluations, ResultToken=resultToken, TestMode=testMode)
+    
+    for evaluation in evaluations:
+    	time.sleep(.1)    	    
+    	AWS_CONFIG_CLIENT.put_evaluations(Evaluations=[evaluation], ResultToken=resultToken, TestMode=testMode)
+    
+    
     # Used solely for RDK test to be able to test Lambda function
     return evaluations
 

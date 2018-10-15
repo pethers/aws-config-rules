@@ -59,6 +59,7 @@ import json
 import datetime
 import boto3
 import botocore
+import time
 
 ##############
 # Parameters #
@@ -102,6 +103,8 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
         if elb['Type'] != 'application':
             continue
 
+        time.sleep(0.2)
+        
         alb_all_listeners = get_all_listeners(alb_client, elb['LoadBalancerArn'])
 
         http_bool, http_str = is_there_any_http_listeners_compliant(alb_all_listeners)
@@ -457,7 +460,12 @@ def lambda_handler(event, context):
         # Used solely for RDK test to skip actual put_evaluation API call
         testMode = True
     # Invoke the Config API to report the result of the evaluation
-    AWS_CONFIG_CLIENT.put_evaluations(Evaluations=evaluations, ResultToken=resultToken, TestMode=testMode)
+    
+    for evaluation in evaluations:
+    	time.sleep(.1)    	    
+    	AWS_CONFIG_CLIENT.put_evaluations(Evaluations=[evaluation], ResultToken=resultToken, TestMode=testMode)
+
+
     # Used solely for RDK test to be able to test Lambda function
     return evaluations
 
