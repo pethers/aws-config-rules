@@ -97,7 +97,7 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
     evaluations = []
     
     my_session = boto3.session.Session()
-	my_region = my_session.region_name
+    my_region = my_session.region_name
     my_acccount_id = boto3.client('sts').get_caller_identity().get('Account')
     
     alb_client = get_client("elb", event)
@@ -425,7 +425,7 @@ def lambda_handler(event, context):
     # Invoke the Config API to report the result of the evaluation
     
     for evaluation in evaluations:
-    	time.sleep(.1)    	    
+    	time.sleep(.2)    	    
     	AWS_CONFIG_CLIENT.put_evaluations(Evaluations=[evaluation], ResultToken=resultToken, TestMode=testMode)
     
     
