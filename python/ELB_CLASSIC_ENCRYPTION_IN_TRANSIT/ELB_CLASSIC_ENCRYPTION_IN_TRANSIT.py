@@ -109,15 +109,15 @@ def evaluate_compliance(event, configuration_item, valid_rule_parameters):
 
         http_bool, http_str = is_there_any_http_listeners_compliant(elb_all_listenerdescriptions)
         if not http_bool:
-            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:' + my_region + ':' + my_acccount_id + ':loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=http_str))
+            evaluations.append(build_evaluation(elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=http_str))
             continue
 
         https_bool, https_str = is_there_any_https_listeners_compliant(elb_all_listenerdescriptions)
         if not https_bool:
-            evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:' + my_region + ':' + my_acccount_id + ':loadbalancer/' + elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=https_str))
+            evaluations.append(build_evaluation(elb['LoadBalancerName'], 'NON_COMPLIANT', event, annotation=https_str))
             continue    
 
-        evaluations.append(build_evaluation('arn:aws:elasticloadbalancing:' + my_region + ':' + my_acccount_id + ':loadbalancer/' + elb['LoadBalancerName'], 'COMPLIANT', event))
+        evaluations.append(build_evaluation(elb['LoadBalancerName'], 'COMPLIANT', event))
 
     return evaluations
 
